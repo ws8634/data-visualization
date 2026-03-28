@@ -11,9 +11,17 @@ def index():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    data = request.json
-    result = predictor.predict_single(data)
-    return jsonify(result)
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'Empty request body'}), 400
+            
+        result = predictor.predict_single(data)
+        return jsonify(result)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
