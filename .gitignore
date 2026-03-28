@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+
+# 模型文件（通常较大）
+*.joblib
+
+# 数据文件（按需决定是否排除）
+# *.csv
+
+# IDE
+.idea/
+.vscode/
+*.swp
