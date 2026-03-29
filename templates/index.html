@@ -1,46 +1,1039 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <title>McDonald喜好预测</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麦当劳喜好预测系统</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            border-bottom: 2px solid #ee5a24;
+            padding-bottom: 10px;
+        }
+
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #ee5a24;
+            box-shadow: 0 0 0 3px rgba(238, 90, 36, 0.2);
+        }
+
+        input:invalid:not(:placeholder-shown) {
+            border-color: #e74c3c;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 480px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        button {
+            background: linear-gradient(135deg, #ee5a24 0%, #ff6b6b 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(238, 90, 36, 0.3);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 加载动画 */
+        .loader {
+            display: none;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ee5a24;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 结果显示 */
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .result-success {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+
+        .result-failure {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        #result p {
+            margin: 10px 0;
+            font-size: 1.1rem;
+        }
+
+        .confidence-bar {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            height: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: white;
+            transition: width 0.5s ease;
+        }
+
+        /* 错误提示 */
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            border-left: 4px solid #c62828;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* 图表容器 */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        /* 历史记录 */
+        .history-section {
+            grid-column: 1 / -1;
+            margin-top: 30px;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .history-table th {
+            background: #ee5a24;
+            color: white;
+            font-weight: 600;
+        }
+
+        .history-table tr:hover {
+            background: #f0f0f0;
+        }
+
+        .liked {
+            color: #2ecc71;
+            font-weight: 600;
+        }
+
+        .not-liked {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ee5a24;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* 验证提示 */
+        .validation-error {
+            color: #e74c3c;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .validation-error.show {
+            display: block;
+        }
+
+        /* 对比图表 */
+        .comparison-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-charts {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>用户喜好预测系统</h1>
-    <form id="predictionForm">
-        <input type="number" name="age" placeholder="年龄" required>
-        <input type="number" name="visit_frequency" placeholder="每月访问次数" required>
-        <button type="submit">预测</button>
-    </form>
-    <div id="result"></div>
-    <canvas id="importanceChart"></canvas>
+    <div class="container">
+        <header>
+            <h1>🍔 麦当劳喜好预测系统</h1>
+            <p>基于机器学习的用户喜好智能预测平台</p>
+        </header>
+
+        <div class="main-content">
+            <!-- 左侧：预测表单 -->
+            <div class="section">
+                <h2>📝 数据输入</h2>
+                
+                <form id="predictionForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="age">年龄 *</label>
+                            <input type="number" id="age" name="age" min="18" max="100" placeholder="请输入年龄" required>
+                            <span class="validation-error" id="age-error">年龄必须在18-100之间</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="gender">性别 *</label>
+                            <select id="gender" name="gender" required>
+                                <option value="">请选择性别</option>
+                                <option value="male">男</option>
+                                <option value="female">女</option>
+                            </select>
+                            <span class="validation-error" id="gender-error">请选择性别</span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="income">月收入 (元) *</label>
+                            <input type="number" id="income" name="income" min="1000" max="100000" step="1" placeholder="请输入月收入" required>
+                            <span class="validation-error" id="income-error">月收入必须在1000-100000之间</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="visit_frequency">访问频率 *</label>
+                            <select id="visit_frequency" name="visit_frequency" required>
+                                <option value="">请选择访问频率</option>
+                                <option value="daily">每天</option>
+                                <option value="weekly">每周</option>
+                                <option value="monthly">每月</option>
+                                <option value="rarely">很少</option>
+                            </select>
+                            <span class="validation-error" id="visit_frequency-error">请选择访问频率</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="satisfaction_level">满意度 *</label>
+                        <select id="satisfaction_level" name="satisfaction_level" required>
+                            <option value="">请选择满意度</option>
+                            <option value="high">高</option>
+                            <option value="medium">中</option>
+                            <option value="low">低</option>
+                        </select>
+                        <span class="validation-error" id="satisfaction_level-error">请选择满意度</span>
+                    </div>
+
+                    <button type="submit" id="submitBtn">🔮 进行预测</button>
+                    <div class="loader" id="loader"></div>
+                </form>
+
+                <div class="error-message" id="errorMessage">
+                    <strong>错误：</strong><span id="errorText"></span>
+                </div>
+
+                <div id="result"></div>
+            </div>
+
+            <!-- 右侧：特征重要性图表 -->
+            <div class="section">
+                <h2>📊 特征重要性分析</h2>
+                
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">总记录数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">喜欢的用户</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">平均年龄</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">平均收入</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="importanceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 对比图表 -->
+            <div class="section comparison-charts">
+                <div>
+                    <h2>📈 性别对比</h2>
+                    <div class="chart-container">
+                        <canvas id="genderChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h2>📉 收入分布</h2>
+                    <div class="chart-container">
+                        <canvas id="incomeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 历史记录 -->
+            <div class="section history-section">
+                <h2>📜 预测历史记录</h2>
+                <table class="history-table" id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>年龄</th>
+                            <th>性别</th>
+                            <th>收入</th>
+                            <th>访问频率</th>
+                            <th>满意度</th>
+                            <th>预测结果</th>
+                            <th>置信度</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <script>
-        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = Object.fromEntries(new FormData(e.target));
+        // ============================================
+        // 数据获取模块
+        // ============================================
+        
+        /**
+         * 发送预测请求
+         * @param {Object} formData - 表单数据
+         * @returns {Promise<Object>} 预测结果
+         */
+        async function fetchPrediction(formData) {
             const response = await fetch('/predict', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
-            const data = await response.json();
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || '预测失败');
+            }
+            
+            return response.json();
+        }
 
-            document.getElementById('result').innerHTML = `
-                <p>预测结果: ${data.prediction ? '喜欢' : '不喜欢'}</p>
-                <p>置信度: ${(data.confidence * 100).toFixed(1)}%</p>
-            `;
+        /**
+         * 获取预测历史记录
+         * @returns {Promise<Array>} 历史记录数组
+         */
+        async function fetchHistory() {
+            const response = await fetch('/history');
+            
+            if (!response.ok) {
+                throw new Error('获取历史记录失败');
+            }
+            
+            return response.json();
+        }
 
-            new Chart(document.getElementById('importanceChart'), {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(data.feature_importance),
-                    datasets: [{
-                        label: '特征重要性',
-                        data: Object.values(data.feature_importance),
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)'
-                    }]
+        /**
+         * 获取数据集统计信息
+         * @returns {Promise<Object>} 统计信息
+         */
+        async function fetchStatistics() {
+            const response = await fetch('/statistics');
+            
+            if (!response.ok) {
+                throw new Error('获取统计信息失败');
+            }
+            
+            return response.json();
+        }
+
+        // ============================================
+        // 数据处理模块
+        // ============================================
+
+        /**
+         * 验证表单数据
+         * @param {Object} formData - 表单数据
+         * @returns {Object} 验证结果
+         */
+        function validateFormData(formData) {
+            const errors = {};
+            
+            if (!formData.age || formData.age < 18 || formData.age > 100) {
+                errors.age = '年龄必须在18-100之间';
+            }
+            
+            if (!formData.gender) {
+                errors.gender = '请选择性别';
+            }
+            
+            if (!formData.income || formData.income < 1000 || formData.income > 100000) {
+                errors.income = '月收入必须在1000-100000之间';
+            }
+            
+            if (!formData.visit_frequency) {
+                errors.visit_frequency = '请选择访问频率';
+            }
+            
+            if (!formData.satisfaction_level) {
+                errors.satisfaction_level = '请选择满意度';
+            }
+            
+            return {
+                isValid: Object.keys(errors).length === 0,
+                errors
+            };
+        }
+
+        /**
+         * 格式化日期时间
+         * @param {string} timestamp - ISO格式时间戳
+         * @returns {string} 格式化后的时间字符串
+         */
+        function formatDateTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        /**
+         * 格式化货币
+         * @param {number} value - 金额
+         * @returns {string} 格式化后的货币字符串
+         */
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('zh-CN', {
+                style: 'currency',
+                currency: 'CNY'
+            }).format(value);
+        }
+
+        // ============================================
+        // UI渲染模块
+        // ============================================
+
+        /**
+         * 显示验证错误
+         * @param {Object} errors - 错误对象
+         */
+        function showValidationErrors(errors) {
+            const fields = ['age', 'gender', 'income', 'visit_frequency', 'satisfaction_level'];
+            
+            fields.forEach(field => {
+                const errorElement = document.getElementById(`${field}-error`);
+                if (errors[field]) {
+                    errorElement.textContent = errors[field];
+                    errorElement.classList.add('show');
+                } else {
+                    errorElement.classList.remove('show');
                 }
             });
-        });
+        }
+
+        /**
+         * 清除所有验证错误
+         */
+        function clearValidationErrors() {
+            const errors = document.querySelectorAll('.validation-error');
+            errors.forEach(error => error.classList.remove('show'));
+        }
+
+        /**
+         * 显示加载状态
+         * @param {boolean} isLoading - 是否正在加载
+         */
+        function showLoadingState(isLoading) {
+            const loader = document.getElementById('loader');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (isLoading) {
+                loader.style.display = 'block';
+                submitBtn.disabled = true;
+                submitBtn.textContent = '正在预测...';
+            } else {
+                loader.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔮 进行预测';
+            }
+        }
+
+        /**
+         * 显示错误消息
+         * @param {string} message - 错误消息
+         */
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            
+            errorText.textContent = message;
+            errorMessage.classList.add('show');
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        /**
+         * 隐藏错误消息
+         */
+        function hideError() {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.classList.remove('show');
+        }
+
+        /**
+         * 渲染预测结果
+         * @param {Object} data - 预测结果数据
+         */
+        function renderPredictionResult(data) {
+            const resultDiv = document.getElementById('result');
+            const resultClass = data.prediction ? 'result-success' : 'result-failure';
+            const resultText = data.prediction ? '喜欢' : '不喜欢';
+            
+            resultDiv.className = resultClass;
+            resultDiv.innerHTML = `
+                <h3>预测结果</h3>
+                <p><strong>${resultText}麦当劳</strong></p>
+                <p>置信度：${(data.confidence * 100).toFixed(1)}%</p>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: ${(data.confidence * 100)}%"></div>
+                </div>
+            `;
+            
+            // 渲染特征重要性图表
+            renderImportanceChart(data.feature_importance);
+        }
+
+        /**
+         * 渲染特征重要性图表
+         * @param {Object} featureImportance - 特征重要性数据
+         */
+        function renderImportanceChart(featureImportance) {
+            const ctx = document.getElementById('importanceChart').getContext('2d');
+            
+            // 销毁现有图表
+            if (window.importanceChart) {
+                window.importanceChart.destroy();
+            }
+            
+            window.importanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['年龄', '收入', '性别', '访问频率', '满意度'],
+                    datasets: [{
+                        label: '特征重要性',
+                        data: [
+                            featureImportance.age,
+                            featureImportance.income,
+                            featureImportance.gender,
+                            featureImportance.visit_frequency,
+                            featureImportance.satisfaction_level
+                        ],
+                        backgroundColor: [
+                            'rgba(238, 90, 36, 0.8)',
+                            'rgba(255, 107, 107, 0.8)',
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(52, 152, 219, 0.8)',
+                            'rgba(155, 89, 182, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(238, 90, 36, 1)',
+                            'rgba(255, 107, 107, 1)',
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(155, 89, 182, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `重要性: ${(context.raw * 100).toFixed(2)}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value * 100).toFixed(0) + '%';
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        /**
+         * 渲染统计信息
+         * @param {Object} stats - 统计信息
+         */
+        function renderStatistics(stats) {
+            const totalRecords = document.querySelector('.stat-card:nth-child(1) .stat-value');
+            const likedCount = document.querySelector('.stat-card:nth-child(2) .stat-value');
+            const avgAge = document.querySelector('.stat-card:nth-child(3) .stat-value');
+            const avgIncome = document.querySelector('.stat-card:nth-child(4) .stat-value');
+            
+            totalRecords.textContent = stats.total_records;
+            likedCount.textContent = stats.liked_count;
+            avgAge.textContent = Math.round(stats.age_stats.mean);
+            avgIncome.textContent = '¥' + Math.round(stats.income_stats.mean / 1000) + 'k';
+        }
+
+        /**
+         * 渲染对比图表
+         * @param {Array} history - 历史记录
+         */
+        function renderComparisonCharts(history) {
+            // 性别对比图表
+            renderGenderChart(history);
+            
+            // 收入分布图表
+            renderIncomeChart(history);
+        }
+
+        /**
+         * 渲染性别对比图表
+         * @param {Array} history - 历史记录
+         */
+        function renderGenderChart(history) {
+            const ctx = document.getElementById('genderChart').getContext('2d');
+            
+            if (window.genderChart) {
+                window.genderChart.destroy();
+            }
+            
+            const maleLiked = history.filter(h => h.gender === 'male' && h.prediction).length;
+            const maleNotLiked = history.filter(h => h.gender === 'male' && !h.prediction).length;
+            const femaleLiked = history.filter(h => h.gender === 'female' && h.prediction).length;
+            const femaleNotLiked = history.filter(h => h.gender === 'female' && !h.prediction).length;
+            
+            window.genderChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['男性', '女性'],
+                    datasets: [
+                        {
+                            label: '喜欢',
+                            data: [maleLiked, femaleLiked],
+                            backgroundColor: 'rgba(46, 204, 113, 0.8)'
+                        },
+                        {
+                            label: '不喜欢',
+                            data: [maleNotLiked, femaleNotLiked],
+                            backgroundColor: 'rgba(231, 76, 60, 0.8)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: '性别与喜好分布'
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        /**
+         * 渲染收入分布图表
+         * @param {Array} history - 历史记录
+         */
+        function renderIncomeChart(history) {
+            const ctx = document.getElementById('incomeChart').getContext('2d');
+            
+            if (window.incomeChart) {
+                window.incomeChart.destroy();
+            }
+            
+            const lowIncome = history.filter(h => h.income < 5000 && h.prediction).length;
+            const midIncome = history.filter(h => h.income >= 5000 && h.income < 10000 && h.prediction).length;
+            const highIncome = history.filter(h => h.income >= 10000 && h.prediction).length;
+            
+            window.incomeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['低收入 (<5k)', '中等收入 (5k-10k)', '高收入 (>10k)'],
+                    datasets: [{
+                        data: [lowIncome, midIncome, highIncome],
+                        backgroundColor: [
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(75, 192, 192, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: '收入与喜好分布'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        /**
+         * 渲染历史记录表格
+         * @param {Array} history - 历史记录
+         */
+        function renderHistoryTable(history) {
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = '';
+            
+            history.forEach(record => {
+                const row = document.createElement('tr');
+                const predictionClass = record.prediction ? 'liked' : 'not-liked';
+                const predictionText = record.prediction ? '喜欢' : '不喜欢';
+                
+                row.innerHTML = `
+                    <td>${formatDateTime(record.timestamp)}</td>
+                    <td>${record.age}</td>
+                    <td>${record.gender === 'male' ? '男' : '女'}</td>
+                    <td>${formatCurrency(record.income)}</td>
+                    <td>${translateVisitFrequency(record.visit_frequency)}</td>
+                    <td>${translateSatisfaction(record.satisfaction_level)}</td>
+                    <td class="${predictionClass}">${predictionText}</td>
+                    <td>${(record.confidence * 100).toFixed(1)}%</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        /**
+         * 翻译访问频率
+         * @param {string} frequency - 访问频率英文
+         * @returns {string} 中文翻译
+         */
+        function translateVisitFrequency(frequency) {
+            const translations = {
+                'daily': '每天',
+                'weekly': '每周',
+                'monthly': '每月',
+                'rarely': '很少'
+            };
+            return translations[frequency] || frequency;
+        }
+
+        /**
+         * 翻译满意度
+         * @param {string} level - 满意度英文
+         * @returns {string} 中文翻译
+         */
+        function translateSatisfaction(level) {
+            const translations = {
+                'high': '高',
+                'medium': '中',
+                'low': '低'
+            };
+            return translations[level] || level;
+        }
+
+        // ============================================
+        // 事件处理模块
+        // ============================================
+
+        /**
+         * 初始化表单提交事件
+         */
+        function initFormSubmit() {
+            const form = document.getElementById('predictionForm');
+            
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                hideError();
+                clearValidationErrors();
+                
+                const formData = Object.fromEntries(new FormData(form));
+                formData.age = parseInt(formData.age);
+                formData.income = parseFloat(formData.income);
+                
+                const validation = validateFormData(formData);
+                
+                if (!validation.isValid) {
+                    showValidationErrors(validation.errors);
+                    return;
+                }
+                
+                showLoadingState(true);
+                
+                try {
+                    const result = await fetchPrediction(formData);
+                    renderPredictionResult(result);
+                    
+                    // 更新历史记录
+                    const history = await fetchHistory();
+                    renderHistoryTable(history);
+                    renderComparisonCharts(history);
+                    
+                } catch (error) {
+                    showError(error.message);
+                } finally {
+                    showLoadingState(false);
+                }
+            });
+        }
+
+        /**
+         * 初始化实时验证
+         */
+        function initRealTimeValidation() {
+            const inputs = document.querySelectorAll('#predictionForm input, #predictionForm select');
+            
+            inputs.forEach(input => {
+                input.addEventListener('blur', () => {
+                    const formData = Object.fromEntries(new FormData(document.getElementById('predictionForm')));
+                    formData.age = parseInt(formData.age) || 0;
+                    formData.income = parseFloat(formData.income) || 0;
+                    
+                    const validation = validateFormData(formData);
+                    
+                    if (validation.errors[input.name]) {
+                        document.getElementById(`${input.name}-error`).textContent = validation.errors[input.name];
+                        document.getElementById(`${input.name}-error`).classList.add('show');
+                    } else {
+                        document.getElementById(`${input.name}-error`).classList.remove('show');
+                    }
+                });
+            });
+        }
+
+        /**
+         * 初始化页面数据
+         */
+        async function initPageData() {
+            try {
+                const stats = await fetchStatistics();
+                renderStatistics(stats);
+                
+                const history = await fetchHistory();
+                if (history.length > 0) {
+                    renderHistoryTable(history);
+                    renderComparisonCharts(history);
+                }
+            } catch (error) {
+                console.error('初始化数据失败:', error);
+            }
+        }
+
+        /**
+         * 主初始化函数
+         */
+        function init() {
+            initFormSubmit();
+            initRealTimeValidation();
+            initPageData();
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
