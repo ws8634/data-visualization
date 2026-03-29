@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户价值预测系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group input.error,
+        .form-group select.error {
+            border-color: #e74c3c;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.85em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .result-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+
+        .result-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .result-label {
+            text-align: center;
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+
+        .chart-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 200px;
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .bar {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px 8px 0 0;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 40px;
+        }
+
+        .bar:hover {
+            transform: scaleY(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .bar-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .bar:hover .bar-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .bar-label {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge-high {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #e0e0e0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 20px 30px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1001;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-success {
+            background: #28a745;
+        }
+
+        .toast-error {
+            background: #dc3545;
+        }
+
+        .toast-warning {
+            background: #ffc107;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div style="text-align: center;">
+            <div class="spinner"></div>
+            <div class="loading-text">正在处理中...</div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>客户价值预测系统</h1>
+            <p>智能分析客户特征，预测客户生命周期价值</p>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="section">
+                    <h2 class="section-title">客户信息录入</h2>
+                    <form id="customerForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="name">客户姓名</label>
+                                <input type="text" id="name" name="name" placeholder="请输入客户姓名">
+                                <div class="error-message" id="nameError">请输入有效的客户姓名</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="age">年龄</label>
+                                <input type="number" id="age" name="age" placeholder="请输入年龄" min="18" max="100">
+                                <div class="error-message" id="ageError">请输入18-100之间的有效年龄</div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="gender">性别</label>
+                                <select id="gender" name="gender">
+                                    <option value="">请选择性别</option>
+                                    <option value="male">男</option>
+                                    <option value="female">女</option>
+                                    <option value="other">其他</option>
+                                </select>
+                                <div class="error-message" id="genderError">请选择性别</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="income">月收入（元）</label>
+                                <input type="number" id="income" name="income" placeholder="请输入月收入" min="0">
+                                <div class="error-message" id="incomeError">请输入有效的月收入</div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="purchaseFrequency">购买频率（次/月）</label>
+                                <input type="number" id="purchaseFrequency" name="purchaseFrequency" placeholder="请输入购买频率" min="0" step="0.1">
+                                <div class="error-message" id="purchaseFrequencyError">请输入有效的购买频率</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="avgPurchaseAmount">平均消费金额（元）</label>
+                                <input type="number" id="avgPurchaseAmount" name="avgPurchaseAmount" placeholder="请输入平均消费金额" min="0">
+                                <div class="error-message" id="avgPurchaseAmountError">请输入有效的平均消费金额</div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="satisfaction">满意度评分（1-10）</label>
+                                <input type="number" id="satisfaction" name="satisfaction" placeholder="请输入满意度评分" min="1" max="10">
+                                <div class="error-message" id="satisfactionError">请输入1-10之间的满意度评分</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="customerYears">客户年限（年）</label>
+                                <input type="number" id="customerYears" name="customerYears" placeholder="请输入客户年限" min="0" step="0.1">
+                                <div class="error-message" id="customerYearsError">请输入有效的客户年限</div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="industry">所属行业</label>
+                            <select id="industry" name="industry">
+                                <option value="">请选择行业</option>
+                                <option value="technology">科技</option>
+                                <option value="finance">金融</option>
+                                <option value="retail">零售</option>
+                                <option value="manufacturing">制造业</option>
+                                <option value="healthcare">医疗健康</option>
+                                <option value="education">教育</option>
+                                <option value="service">服务业</option>
+                                <option value="other">其他</option>
+                            </select>
+                            <div class="error-message" id="industryError">请选择所属行业</div>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary" id="predictBtn">预测客户价值</button>
+                            <button type="button" class="btn btn-secondary" id="resetBtn">重置表单</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="section" id="resultSection" style="display: none;">
+                    <h2 class="section-title">预测结果</h2>
+                    <div class="result-card">
+                        <div class="result-label">预测客户生命周期价值（CLV）</div>
+                        <div class="result-value" id="clvResult">¥0</div>
+                        <div style="text-align: center;">
+                            <span class="badge" id="clvBadge">未评估</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="section">
+                    <h2 class="section-title">数据分析</h2>
+                    <div class="tabs">
+                        <button class="tab active" data-tab="history">历史记录</button>
+                        <button class="tab" data-tab="comparison">对比分析</button>
+                        <button class="tab" data-tab="trends">趋势分析</button>
+                    </div>
+
+                    <div class="tab-content active" id="historyTab">
+                        <div class="table-container">
+                            <table class="table" id="historyTable">
+                                <thead>
+                                    <tr>
+                                        <th>姓名</th>
+                                        <th>性别</th>
+                                        <th>年龄</th>
+                                        <th>行业</th>
+                                        <th>CLV</th>
+                                        <th>等级</th>
+                                        <th>预测时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="comparisonTab">
+                        <div class="chart-container">
+                            <h3 class="chart-title">多维度数据对比</h3>
+                            <div id="comparisonChart"></div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="trendsTab">
+                        <div class="chart-container">
+                            <h3 class="chart-title">CLV分布趋势</h3>
+                            <div class="bar-chart" id="trendsChart"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 数据存储模块 - 对接后端API
+         */
+        const dataStore = {
+            /**
+             * API基础路径
+             */
+            baseUrl: '/api',
+
+            /**
+             * 获取所有历史记录
+             * @returns {Promise<Array>} 历史记录数组
+             */
+            async getHistory() {
+                try {
+                    const response = await fetch(`${this.baseUrl}/customers`);
+                    if (!response.ok) throw new Error('获取历史记录失败');
+                    const data = await response.json();
+                    return data.data || [];
+                } catch (error) {
+                    console.error('获取历史记录失败:', error);
+                    return [];
+                }
+            },
+
+            /**
+             * 预测客户价值并添加记录
+             * @param {Object} customer - 客户信息
+             * @returns {Promise<Object>} 预测结果
+             */
+            async predictAndAddRecord(customer) {
+                const response = await fetch(`${this.baseUrl}/customers/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(customer)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || '预测失败');
+                }
+                
+                const data = await response.json();
+                return data.data;
+            },
+
+            /**
+             * 获取统计数据
+             * @returns {Promise<Object>} 统计数据
+             */
+            async getStatistics() {
+                try {
+                    const response = await fetch(`${this.baseUrl}/customers/statistics`);
+                    if (!response.ok) throw new Error('获取统计数据失败');
+                    const data = await response.json();
+                    return data.data;
+                } catch (error) {
+                    console.error('获取统计数据失败:', error);
+                    return null;
+                }
+            },
+
+            /**
+             * 清空历史记录
+             * @returns {Promise<boolean>} 是否成功
+             */
+            async clearHistory() {
+                try {
+                    const response = await fetch(`${this.baseUrl}/customers/clear`, {
+                        method: 'DELETE'
+                    });
+                    return response.ok;
+                } catch (error) {
+                    console.error('清空历史记录失败:', error);
+                    return false;
+                }
+            }
+        };
+
+        /**
+         * 数据处理模块
+         */
+        const dataProcessor = {
+            /**
+             * 获取CLV等级
+             * @param {number} clv - CLV值
+             * @returns {Object} 等级信息
+             */
+            getCLVLevel(clv) {
+                if (clv >= 100000) {
+                    return { label: '高价值', class: 'badge-high' };
+                } else if (clv >= 30000) {
+                    return { label: '中价值', class: 'badge-medium' };
+                } else {
+                    return { label: '低价值', class: 'badge-low' };
+                }
+            },
+
+            /**
+             * 验证客户数据
+             * @param {Object} data - 要验证的数据
+             * @returns {Object} 验证结果
+             */
+            validateCustomerData(data) {
+                const errors = {};
+                let isValid = true;
+
+                if (!data.name || data.name.trim().length < 2) {
+                    errors.name = '请输入有效的客户姓名（至少2个字符）';
+                    isValid = false;
+                }
+
+                if (!data.age || data.age < 18 || data.age > 100) {
+                    errors.age = '请输入18-100之间的有效年龄';
+                    isValid = false;
+                }
+
+                if (!data.gender) {
+                    errors.gender = '请选择性别';
+                    isValid = false;
+                }
+
+                if (!data.income || data.income < 0) {
+                    errors.income = '请输入有效的月收入';
+                    isValid = false;
+                }
+
+                if (!data.purchaseFrequency || data.purchaseFrequency < 0) {
+                    errors.purchaseFrequency = '请输入有效的购买频率';
+                    isValid = false;
+                }
+
+                if (!data.avgPurchaseAmount || data.avgPurchaseAmount < 0) {
+                    errors.avgPurchaseAmount = '请输入有效的平均消费金额';
+                    isValid = false;
+                }
+
+                if (!data.satisfaction || data.satisfaction < 1 || data.satisfaction > 10) {
+                    errors.satisfaction = '请输入1-10之间的满意度评分';
+                    isValid = false;
+                }
+
+                if (!data.customerYears || data.customerYears < 0) {
+                    errors.customerYears = '请输入有效的客户年限';
+                    isValid = false;
+                }
+
+                if (!data.industry) {
+                    errors.industry = '请选择所属行业';
+                    isValid = false;
+                }
+
+                return { isValid, errors };
+            }
+        };
+
+        /**
+         * UI渲染模块
+         */
+        const uiRenderer = {
+            /**
+             * 显示加载动画
+             * @param {boolean} show - 是否显示
+             */
+            showLoading(show) {
+                const overlay = document.getElementById('loadingOverlay');
+                if (show) {
+                    overlay.classList.add('show');
+                } else {
+                    overlay.classList.remove('show');
+                }
+            },
+
+            /**
+             * 显示Toast消息
+             * @param {string} message - 消息内容
+             * @param {string} type - 消息类型（success/error/warning）
+             */
+            showToast(message, type = 'success') {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.className = `toast toast-${type}`;
+                toast.classList.add('show');
+
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            },
+
+            /**
+             * 显示表单错误
+             * @param {Object} errors - 错误对象
+             */
+            showFormErrors(errors) {
+                document.querySelectorAll('.form-group input, .form-group select').forEach(el => {
+                    el.classList.remove('error');
+                });
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.classList.remove('show');
+                });
+
+                Object.keys(errors).forEach(field => {
+                    const input = document.getElementById(field);
+                    const errorEl = document.getElementById(field + 'Error');
+                    if (input) input.classList.add('error');
+                    if (errorEl) {
+                        errorEl.textContent = errors[field];
+                        errorEl.classList.add('show');
+                    }
+                });
+            },
+
+            /**
+             * 清除表单错误
+             */
+            clearFormErrors() {
+                document.querySelectorAll('.form-group input, .form-group select').forEach(el => {
+                    el.classList.remove('error');
+                });
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.classList.remove('show');
+                });
+            },
+
+            /**
+             * 渲染预测结果
+             * @param {number} clv - CLV值
+             */
+            renderResult(clv) {
+                const resultSection = document.getElementById('resultSection');
+                const clvResult = document.getElementById('clvResult');
+                const clvBadge = document.getElementById('clvBadge');
+                const level = dataProcessor.getCLVLevel(clv);
+
+                resultSection.style.display = 'block';
+                clvResult.textContent = '¥' + clv.toLocaleString();
+                clvBadge.textContent = level.label;
+                clvBadge.className = 'badge ' + level.class;
+
+                resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            },
+
+            /**
+             * 渲染历史记录表格
+             */
+            async renderHistoryTable() {
+                const tbody = document.getElementById('historyTableBody');
+                const history = await dataStore.getHistory();
+
+                if (history.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #999;">暂无历史记录</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = history.map(record => {
+                    const level = dataProcessor.getCLVLevel(record.clv);
+                    const genderMap = { male: '男', female: '女', other: '其他' };
+                    const industryMap = {
+                        technology: '科技',
+                        finance: '金融',
+                        retail: '零售',
+                        manufacturing: '制造业',
+                        healthcare: '医疗健康',
+                        education: '教育',
+                        service: '服务业',
+                        other: '其他'
+                    };
+
+                    return `
+                        <tr>
+                            <td>${record.name}</td>
+                            <td>${genderMap[record.gender] || record.gender}</td>
+                            <td>${record.age}</td>
+                            <td>${industryMap[record.industry] || record.industry}</td>
+                            <td>¥${record.clv.toLocaleString()}</td>
+                            <td><span class="badge ${level.class}">${level.label}</span></td>
+                            <td>${new Date(record.createdAt).toLocaleString()}</td>
+                        </tr>
+                    `;
+                }).join('');
+            },
+
+            /**
+             * 渲染对比分析图表
+             */
+            async renderComparisonChart() {
+                const container = document.getElementById('comparisonChart');
+                const stats = await dataStore.getStatistics();
+
+                if (!stats) {
+                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">暂无数据</div>';
+                    return;
+                }
+
+                const industryMap = {
+                    technology: '科技',
+                    finance: '金融',
+                    retail: '零售',
+                    manufacturing: '制造业',
+                    healthcare: '医疗健康',
+                    education: '教育',
+                    service: '服务业',
+                    other: '其他'
+                };
+
+                const data = Object.entries(stats.industryStats).map(([industry, data]) => ({
+                    industry: industryMap[industry] || industry,
+                    avgCLV: Math.round(data.total / data.count),
+                    count: data.count
+                }));
+
+                const maxValue = Math.max(...data.map(d => d.avgCLV));
+
+                container.innerHTML = `
+                    <div class="bar-chart">
+                        ${data.map(item => `
+                            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                                <div class="bar" style="height: ${(item.avgCLV / maxValue) * 160}px;">
+                                    <div class="bar-tooltip">
+                                        行业: ${item.industry}<br>
+                                        平均CLV: ¥${item.avgCLV.toLocaleString()}<br>
+                                        样本数: ${item.count}
+                                    </div>
+                                </div>
+                                <div class="bar-label">${item.industry}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            },
+
+            /**
+             * 渲染趋势分析图表
+             */
+            async renderTrendsChart() {
+                const container = document.getElementById('trendsChart');
+                const history = await dataStore.getHistory();
+
+                if (history.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999; grid-column: 1 / -1;">暂无数据</div>';
+                    return;
+                }
+
+                const ranges = [
+                    { label: '0-3万', min: 0, max: 30000 },
+                    { label: '3-6万', min: 30000, max: 60000 },
+                    { label: '6-10万', min: 60000, max: 100000 },
+                    { label: '10万+', min: 100000, max: Infinity }
+                ];
+
+                const distribution = ranges.map(range => ({
+                    ...range,
+                    count: history.filter(r => r.clv >= range.min && r.clv < range.max).length
+                }));
+
+                const maxCount = Math.max(...distribution.map(d => d.count), 1);
+
+                container.innerHTML = distribution.map(item => `
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                        <div class="bar" style="height: ${(item.count / maxCount) * 160}px;">
+                            <div class="bar-tooltip">
+                                CLV区间: ${item.label}<br>
+                                客户数量: ${item.count}
+                            </div>
+                        </div>
+                        <div class="bar-label">${item.label}</div>
+                    </div>
+                `).join('');
+            },
+
+            /**
+             * 切换标签页
+             * @param {string} tabId - 标签页ID
+             */
+            async switchTab(tabId) {
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+
+                document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+                document.getElementById(tabId + 'Tab').classList.add('active');
+
+                if (tabId === 'comparison') {
+                    await this.renderComparisonChart();
+                } else if (tabId === 'trends') {
+                    await this.renderTrendsChart();
+                }
+            }
+        };
+
+        /**
+         * 表单处理模块
+         */
+        const formHandler = {
+            /**
+             * 获取表单数据
+             * @returns {Object} 表单数据
+             */
+            getFormData() {
+                return {
+                    name: document.getElementById('name').value.trim(),
+                    age: parseInt(document.getElementById('age').value),
+                    gender: document.getElementById('gender').value,
+                    income: parseFloat(document.getElementById('income').value),
+                    purchaseFrequency: parseFloat(document.getElementById('purchaseFrequency').value),
+                    avgPurchaseAmount: parseFloat(document.getElementById('avgPurchaseAmount').value),
+                    satisfaction: parseInt(document.getElementById('satisfaction').value),
+                    customerYears: parseFloat(document.getElementById('customerYears').value),
+                    industry: document.getElementById('industry').value
+                };
+            },
+
+            /**
+             * 重置表单
+             */
+            resetForm() {
+                document.getElementById('customerForm').reset();
+                uiRenderer.clearFormErrors();
+                document.getElementById('resultSection').style.display = 'none';
+            },
+
+            /**
+             * 提交表单
+             * @param {Event} event - 表单提交事件
+             */
+            async submitForm(event) {
+                event.preventDefault();
+
+                const data = this.getFormData();
+                const validation = dataProcessor.validateCustomerData(data);
+
+                if (!validation.isValid) {
+                    uiRenderer.showFormErrors(validation.errors);
+                    uiRenderer.showToast('请检查表单填写是否正确', 'error');
+                    return;
+                }
+
+                uiRenderer.clearFormErrors();
+                uiRenderer.showLoading(true);
+
+                try {
+                    const result = await dataStore.predictAndAddRecord(data);
+                    uiRenderer.renderResult(result.clv);
+                    await uiRenderer.renderHistoryTable();
+                    uiRenderer.showToast('预测成功！', 'success');
+                } catch (error) {
+                    uiRenderer.showToast(error.message || '预测失败，请重试', 'error');
+                    console.error(error);
+                } finally {
+                    uiRenderer.showLoading(false);
+                }
+            }
+        };
+
+        /**
+         * 初始化应用
+         */
+        async function initApp() {
+            document.getElementById('customerForm').addEventListener('submit', (e) => formHandler.submitForm(e));
+            document.getElementById('resetBtn').addEventListener('click', () => formHandler.resetForm());
+
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', async () => {
+                    await uiRenderer.switchTab(tab.dataset.tab);
+                });
+            });
+
+            await uiRenderer.renderHistoryTable();
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

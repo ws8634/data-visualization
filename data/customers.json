@@ -1,0 +1,17 @@
+[
+  {
+    "name": "张三",
+    "age": 30,
+    "gender": "male",
+    "income": 10000,
+    "purchaseFrequency": 2,
+    "avgPurchaseAmount": 500,
+    "satisfaction": 8,
+    "customerYears": 2,
+    "industry": "technology",
+    "clv": 28800,
+    "level": "低价值",
+    "id": 1774790263237,
+    "createdAt": "2026-03-29T13:17:43.237Z"
+  }
+]
