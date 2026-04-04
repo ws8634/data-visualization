@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>McDonald喜好预测</title>
+    <style>
+        .error-message {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        form div {
+            margin-bottom: 15px;
+        }
+        input, select {
+            padding: 8px;
+            width: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #loading {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>用户喜好预测系统</h1>
+    <form id="predictionForm">
+        <div>
+            <input type="number" name="age" placeholder="年龄" required>
+            <div class="error-message" id="ageError"></div>
+        </div>
+        <div>
+            <select name="gender" required>
+                <option value="">请选择性别</option>
+                <option value="male">男</option>
+                <option value="female">女</option>
+            </select>
+            <div class="error-message" id="genderError"></div>
+        </div>
+        <div>
+            <input type="number" name="income" placeholder="收入" step="0.01" required>
+            <div class="error-message" id="incomeError"></div>
+        </div>
+        <div>
+            <select name="visit_frequency" required>
+                <option value="">请选择访问频率</option>
+                <option value="rarely">很少</option>
+                <option value="monthly">每月</option>
+                <option value="weekly">每周</option>
+            </select>
+            <div class="error-message" id="visitFrequencyError"></div>
+        </div>
+        <div>
+            <select name="satisfaction_level" required>
+                <option value="">请选择满意度</option>
+                <option value="low">低</option>
+                <option value="medium">中</option>
+                <option value="high">高</option>
+            </select>
+            <div class="error-message" id="satisfactionError"></div>
+        </div>
+        <button type="submit">预测</button>
+    </form>
+    <div id="result"></div>
+    <div id="loading" style="display: none;">
+        <div class="loader"></div>
+        <p>正在预测中...</p>
+    </div>
+    <script>
+        function validateForm() {
+            let isValid = true;
+            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+            const age = document.querySelector('input[name="age"]').value;
+            if (!age || age < 1 || age > 120) {
+                document.getElementById('ageError').textContent = '请输入有效的年龄（1-120）';
+                isValid = false;
+            }
+            const gender = document.querySelector('select[name="gender"]').value;
+            if (!gender) {
+                document.getElementById('genderError').textContent = '请选择性别';
+                isValid = false;
+            }
+            const income = document.querySelector('input[name="income"]').value;
+            if (!income || income < 0) {
+                document.getElementById('incomeError').textContent = '请输入有效的收入（大于0）';
+                isValid = false;
+            }
+            const visitFrequency = document.querySelector('select[name="visit_frequency"]').value;
+            if (!visitFrequency) {
+                document.getElementById('visitFrequencyError').textContent = '请选择访问频率';
+                isValid = false;
+            }
+            const satisfaction = document.querySelector('select[name="satisfaction_level"]').value;
+            if (!satisfaction) {
+                document.getElementById('satisfactionError').textContent = '请选择满意度';
+                isValid = false;
+            }
+            return isValid;
+        }
+
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!validateForm()) {
+                return;
+            }
+            const loadingElement = document.getElementById('loading');
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            loadingElement.style.display = 'block';
+            submitButton.disabled = true;
+            try {
+                const formData = Object.fromEntries(new FormData(e.target));
+                const fetchOptions = {};
+                fetchOptions.method = 'POST';
+                fetchOptions.headers = {};
+                fetchOptions.headers['Content-Type'] = 'application/json';
+                fetchOptions.body = JSON.stringify(formData);
+                const response = await fetch('http://127.0.0.1:5002/predict', fetchOptions);
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<p>预测结果: ' + (data.prediction ? '喜欢' : '不喜欢') + '</p><p>置信度: ' + (data.confidence * 100).toFixed(1) + '%</p>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p style="color: red;">预测失败: ' + error.message + '</p>';
+            } finally {
+                loadingElement.style.display = 'none';
+                submitButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
