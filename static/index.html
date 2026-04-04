@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鸢尾花分类预测系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+
+        .prediction-result {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .prediction-result .species {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .prediction-result .confidence {
+            font-size: 1.2rem;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        .probabilities {
+            margin-top: 20px;
+        }
+
+        .prob-bar {
+            margin-bottom: 15px;
+        }
+
+        .prob-bar label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .prob-bar .bar {
+            height: 25px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .prob-bar .bar-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            transition: width 0.5s ease;
+        }
+
+        .api-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .api-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .api-info code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌸 鸢尾花分类预测系统</h1>
+            <p>基于决策树和K近邻的集成学习模型</p>
+        </div>
+
+        <div class="card">
+            <h2>输入特征</h2>
+            <form id="predictForm">
+                <div class="form-group">
+                    <label for="sepal_length">花萼长度 (sepal_length)</label>
+                    <input type="number" id="sepal_length" step="0.1" min="0" max="10" value="5.1" required>
+                </div>
+                <div class="form-group">
+                    <label for="sepal_width">花萼宽度 (sepal_width)</label>
+                    <input type="number" id="sepal_width" step="0.1" min="0" max="10" value="3.5" required>
+                </div>
+                <div class="form-group">
+                    <label for="petal_length">花瓣长度 (petal_length)</label>
+                    <input type="number" id="petal_length" step="0.1" min="0" max="10" value="1.4" required>
+                </div>
+                <div class="form-group">
+                    <label for="petal_width">花瓣宽度 (petal_width)</label>
+                    <input type="number" id="petal_width" step="0.1" min="0" max="10" value="0.2" required>
+                </div>
+                <button type="submit" class="btn">🔍 预测分类</button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px;">正在预测...</p>
+            </div>
+
+            <div class="result" id="result"></div>
+        </div>
+
+        <div class="card">
+            <h2>API 接口说明</h2>
+            <div class="api-info">
+                <h3>单样本预测</h3>
+                <p><strong>接口:</strong> <code>POST /api/predict</code></p>
+                <p><strong>请求示例:</strong></p>
+                <pre><code>{
+    "sepal_length": 5.1,
+    "sepal_width": 3.5,
+    "petal_length": 1.4,
+    "petal_width": 0.2
+}</code></pre>
+
+                <h3 style="margin-top: 20px;">批量预测</h3>
+                <p><strong>接口:</strong> <code>POST /api/predict_batch</code></p>
+
+                <h3 style="margin-top: 20px;">健康检查</h3>
+                <p><strong>接口:</strong> <code>GET /api/health</code></p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2024 鸢尾花分类预测系统 | 集成学习模型</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            const data = {
+                sepal_length: parseFloat(document.getElementById('sepal_length').value),
+                sepal_width: parseFloat(document.getElementById('sepal_width').value),
+                petal_length: parseFloat(document.getElementById('petal_length').value),
+                petal_width: parseFloat(document.getElementById('petal_width').value)
+            };
+            
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const resultData = await response.json();
+                
+                loading.style.display = 'none';
+                
+                if (resultData.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <div class="prediction-result">
+                            <div class="species">${resultData.prediction}</div>
+                            <div class="confidence">置信度: ${(resultData.confidence * 100).toFixed(2)}%</div>
+                        </div>
+                        <div class="probabilities">
+                            <h4>各类别概率:</h4>
+                            <div class="prob-bar">
+                                <label>
+                                    <span>Setosa (山鸢尾)</span>
+                                    <span>${(resultData.probabilities[0] * 100).toFixed(2)}%</span>
+                                </label>
+                                <div class="bar">
+                                    <div class="bar-fill" style="width: ${resultData.probabilities[0] * 100}%"></div>
+                                </div>
+                            </div>
+                            <div class="prob-bar">
+                                <label>
+                                    <span>Versicolor (变色鸢尾)</span>
+                                    <span>${(resultData.probabilities[1] * 100).toFixed(2)}%</span>
+                                </label>
+                                <div class="bar">
+                                    <div class="bar-fill" style="width: ${resultData.probabilities[1] * 100}%"></div>
+                                </div>
+                            </div>
+                            <div class="prob-bar">
+                                <label>
+                                    <span>Virginica (维吉尼亚鸢尾)</span>
+                                    <span>${(resultData.probabilities[2] * 100).toFixed(2)}%</span>
+                                </label>
+                                <div class="bar">
+                                    <div class="bar-fill" style="width: ${resultData.probabilities[2] * 100}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `<strong>错误:</strong> ${resultData.error}`;
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                result.className = 'result error';
+                result.innerHTML = `<strong>错误:</strong> 无法连接到服务器，请检查服务是否启动`;
+            }
+        });
+    </script>
+</body>
+</html>
