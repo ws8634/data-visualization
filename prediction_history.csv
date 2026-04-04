@@ -1,0 +1,2 @@
+timestamp,age,gender,income,visit_frequency,satisfaction_level,prediction,confidence
+2026-04-04T12:15:47.509040,23,male,3800,weekly,high,1,0.6288265306122449
