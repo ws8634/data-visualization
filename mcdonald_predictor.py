@@ -18,8 +18,8 @@ class McDonaldPredictor:
         data = pd.read_csv('mcdonald_data.csv')
         processed_data = self._preprocess(data)
 
-        X = processed_data.drop('likes_mcdonald', axis=1)
-        y = processed_data['likes_mcdonald']
+        X = processed_data.drop('liked_mcdonalds', axis=1)
+        y = processed_data['liked_mcdonalds']
 
         self.model = Pipeline([
             ('scaler', StandardScaler()),
@@ -30,19 +30,51 @@ class McDonaldPredictor:
         joblib.dump(self.model, self.model_path)
 
     def _preprocess(self, data):
-        return data[
+        data = data[
             (data['age'] >= 18) &
-            (data['visit_frequency'] > 0)
+            (data['visit_frequency'].notna())
             ].dropna()
+        
+        data['gender'] = data['gender'].map({'male': 0, 'female': 1})
+        data['visit_frequency'] = data['visit_frequency'].map({
+            'rarely': 0,
+            'monthly': 1,
+            'weekly': 2,
+            'daily': 3
+        })
+        data['satisfaction_level'] = data['satisfaction_level'].map({
+            'low': 0,
+            'medium': 1,
+            'high': 2
+        })
+        
+        return data
 
     def predict_single(self, features):
         df = pd.DataFrame([features])
+        
+        df['gender'] = df['gender'].map({'male': 0, 'female': 1})
+        df['visit_frequency'] = df['visit_frequency'].map({
+            'rarely': 0,
+            'monthly': 1,
+            'weekly': 2,
+            'daily': 3
+        })
+        df['satisfaction_level'] = df['satisfaction_level'].map({
+            'low': 0,
+            'medium': 1,
+            'high': 2
+        })
+        
+        expected_columns = ['age', 'gender', 'income', 'visit_frequency', 'satisfaction_level']
+        df = df[expected_columns]
+        
         proba = self.model.predict_proba(df)[0]
         return {
             'prediction': int(self.model.predict(df)[0]),
             'confidence': float(max(proba)),
             'feature_importance': dict(zip(
-                df.columns,
+                expected_columns,
                 self.model.named_steps['classifier'].feature_importances_
             ))
         }
