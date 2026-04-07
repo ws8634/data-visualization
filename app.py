@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify
 from mcdonald_predictor import McDonaldPredictor
 import os
 
@@ -15,9 +15,5 @@ def predict():
     result = predictor.predict_single(data)
     return jsonify(result)
 
-@app.route('/@vite/client')
-def vite_client():
-    return '', 204
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    app.run(host='0.0.0.0', port=5000)
